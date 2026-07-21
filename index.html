@@ -194,6 +194,36 @@ footer{padding:18px 28px;font-size:10.5px;color:var(--on-dark-3);border-top:1px 
 .ch g.leg:hover text{fill:var(--accent-dk)}
 .drill-hint{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:800;letter-spacing:.2px;text-transform:none;color:var(--accent-dk);background:var(--accent-soft);padding:2px 8px;border-radius:20px}
 .leg-hint{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:800;letter-spacing:.2px;text-transform:none;color:var(--ink-2);background:var(--navy-soft);padding:2px 8px;border-radius:20px}
+/* ---- user guide ---- */
+.gtop{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,#12213F 0%,#1D3564 60%,#26407A 100%);border-radius:14px;padding:20px 24px;margin-bottom:18px;color:#fff}
+.gtop-l{flex:1;min-width:0}
+.gtop-k{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#9DB4E0;margin-bottom:6px}
+.gtop-t{font-size:19px;font-weight:800;letter-spacing:-.2px;margin-bottom:7px}
+.gtop-f{font-size:12px;line-height:1.6;color:#C9D8F2}
+.gtop-f b{color:#fff}
+.gtop-r{text-align:right;flex:0 0 auto;padding-left:18px;border-left:1px solid rgba(255,255,255,.16)}
+.gtop-n{font-size:32px;font-weight:800;color:var(--accent);line-height:1}
+.gtop-u{font-size:10.5px;font-weight:700;color:#9DB4E0;margin-top:5px;letter-spacing:.04em}
+.card.step{position:relative;padding-top:22px}
+.step-n{position:absolute;top:-11px;left:18px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.14)}
+.step-h{font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:8px}
+.step-b{font-size:12px;line-height:1.72;color:var(--ink-2)}
+.step-t{margin-top:11px;padding-top:9px;border-top:1px dashed var(--line);font-size:10.5px;font-weight:700;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.nvrow{display:flex;gap:9px;align-items:baseline;padding:3.5px 0}
+.nvk{flex:0 0 96px;font-weight:800;color:var(--ink);font-size:11.5px}
+.nvv{color:var(--ink-2);font-size:11.5px}
+.readnum{margin-top:14px}
+.rn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rn{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.srcrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+.src{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.src-f{font-size:12px;font-weight:800;color:var(--ink)}
+.src-d{font-size:11px;color:var(--ink-2);margin-top:3px}
+.fileref{font-weight:800;color:var(--accent-dk)}
+.kpibox{max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:9px}
+.kpibox table{margin:0}
+.kpibox thead th{position:sticky;top:0;background:var(--bg);z-index:2;box-shadow:inset 0 -1px 0 var(--line)}
+@media(max-width:900px){.gtop{flex-direction:column;align-items:flex-start}.gtop-r{border-left:0;padding-left:0;text-align:left}.rn-grid,.srcrow{grid-template-columns:1fr}}
 .kpisearch{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:600;color:var(--ink);background:var(--card);margin-bottom:12px}
 .kpisearch::placeholder{color:var(--ink-3)}
 .kpisearch:focus{outline:2px solid var(--accent);border-color:var(--accent)}
@@ -1873,62 +1903,6 @@ function filterKPI(q){
 
 /* =========================== USER GUIDE & SOURCES =========================== */
 function pgGuide(el){
-  const i=mi(S.month);
-  const SC=runSelfCheck();
-  const TH = v => fmt(v,0);   // THB with 0 decimals
-  const okc = (a,b,tol=0.01)=> (b && isFinite(a) && Math.abs(a/b-1)<=tol) ? '<span class="ok">✓ match</span>' : '<span class="warn">⚠ check</span>';
-
-  /* ---- source cross-check rows (selected month, monthly values) ---- */
-  const dSrc=(sh,row,key)=>({raw:dcRaw(sh,key)[i]});
-  const rows=[];
-  const push=(metric,src,raw,transform,dash,check='')=>rows.push([`<span class="name">${metric}</span>`,src,raw,transform,dash,check]);
-  ['Dry','Fresh'].forEach(sh=>{
-    const twc=dcRaw(sh,'total_wh')[i], tf=dcRaw(sh,'tfrs16')[i], tr=dcRaw(sh,'transport')[i], g=dcRaw(sh,'grand_total')[i];
-    push(`${sh} — DC operation cost`, `DC Cost Data.xlsx → [${sh}] → “Total Warehouse cost” (row 374)`, TH(twc)+' THB', '÷ 1,000,000', fMB(twc/1e6)+' MB','');
-    push(`${sh} — TFRS16 add-on`, `DC Cost Data.xlsx → [${sh}] → “Warehouse (TFRS16)” (row 375)`, TH(tf)+' THB', '÷ 1,000,000', fMB(tf/1e6)+' MB','');
-    push(`${sh} — Mid-Mile transport`, `DC Cost Data.xlsx → [${sh}] → “Transportation Cost” (row 376)`, TH(tr)+' THB', '÷ 1,000,000', fMB(tr/1e6)+' MB','');
-    push(`${sh} — Grand Total (B2B)`, `DC Cost Data.xlsx → [${sh}] → “Grand Total” (row 377)`, TH(g)+' THB', 'identity: 374+375+376', fMB(g/1e6)+' MB', okc(twc+tf+tr, g, 0.001));
-  });
-  push('Dry volume', 'DC Cost Data.xlsx → [Dry] → “Inbound Case” (380) / “Outbound Case” (381) / “Dry MM Trip” (383)',
-    TH(dcRaw('Dry','inbound_case')[i])+' / '+TH(dcRaw('Dry','outbound_case')[i])+' / '+TH(dcRaw('Dry','trip')[i]), 'used as unit-cost denominators', '—','');
-  push('Fresh volume', 'DC Cost Data.xlsx → [Fresh] → “Ton” (row 382)', fmt(dcRaw('Fresh','ton')[i],0)+' tons', '× 1,000 → kg', '—','');
-  const duC=dcRaw('Dry','total_wh')[i]/dcRaw('Dry','inbound_case')[i];
-  push('Dry DC unit cost', 'stored: [Dry] “DC Cost/Case” (row 387)', fmt(dcRaw('Dry','dc_cost_case')[i],2)+' THB/case', 'recomputed: 374 ÷ 380', fmt(duC,2)+' THB/case', okc(duC, dcRaw('Dry','dc_cost_case')[i]));
-  const buC=dcRaw('Dry','grand_total')[i]/dcRaw('Dry','inbound_case')[i];
-  push('B2B Dry all-in unit cost', 'stored: [Dry] “B2B Dry Cost/Case” (row 386)', fmt(dcRaw('Dry','b2b_cost_case')[i],2)+' THB/case', 'recomputed: 377 ÷ 380', fmt(buC,2)+' THB/case', okc(buC, dcRaw('Dry','b2b_cost_case')[i]));
-  const fuK=dcRaw('Fresh','total_wh')[i]/(dcRaw('Fresh','ton')[i]*1000);
-  push('Fresh DC unit cost', 'stored: [Fresh] “DC Cost/Kg.” (row 393)', fmt(dcRaw('Fresh','dc_cost_kg')[i],2)+' THB/kg', 'recomputed: 374 ÷ (382 × 1,000)', fmt(fuK,2)+' THB/kg', okc(fuK, dcRaw('Fresh','dc_cost_kg')[i]));
-  const cpT=dcRaw('Dry','transport')[i]/dcRaw('Dry','trip')[i];
-  push('Dry MM cost/trip', 'stored: [Dry] “Dry MM Cost/Trip” (row 389)', fmt(dcRaw('Dry','mm_cost_trip')[i],0)+' THB', 'recomputed: 376 ÷ 383', fmt(cpT,0)+' THB', okc(cpT, dcRaw('Dry','mm_cost_trip')[i]));
-  FC_ORDER.forEach(c=>{
-    const f=FC[c];
-    if(f.src==='pnl') push(`${f.name} — total cost`, `FC Cost Data.xlsx → [P&L] block FC_${c.slice(2)} → “1.2 Total Cost”`, fmt(f.total[i]*1e3,0)+' KTHB', '÷ 1,000', fMB(f.total[i])+' MB','');
-    else push(`${f.name} — total cost`, `FC Cost Data.xlsx → [${c}] → “Total Warehouse cost” (row 376) — no P&L block yet`, TH(f.total[i]*1e6)+' THB', '÷ 1,000,000', fMB(f.total[i])+' MB','');
-  });
-  push('B2C FC operation', 'Σ P&L “- Operation Cost (KTHB)” + FC409 (376 − 225)', '', 'Σ ÷ 1,000', fMB(SEG.fcOp[i])+' MB','');
-  push('B2C last-mile — IN TOTAL SCM', 'Summary Last mile … .xlsb → [Data] → “Cost (Store+FC+Local)” (FC + Store + Local)',
-    TH(SEG.lastMile[i]*1e6)+' THB', '÷ 1,000,000', fMB(SEG.lastMile[i])+' MB','');
-  push('FC P&L last-mile — EXCLUDED', 'FC Cost Data.xlsx → [P&L] → Σ “- Last mile (KTHB)” — reference only, not added to Total SCM',
-    fmt(SEG.lmFC[i]*1e3,0)+' KTHB', 'not added', '<span class="mut">excluded</span>','');
-  if(LM.ok){
-    const j=lmIdx(), stale=lmStale();
-    const lmSrc = 'Summary Last mile cost … .xlsx → [Data Last-mile]';
-    push('B2C last-mile — Store + FC + Local', lmSrc+' → “Cost (Store+FC+Local)”'+(stale?` <b>(${label(M[j])} — newest month with last-mile data)</b>`:''),
-      TH(LM.cost[j]*1e6)+' THB', '÷ 1,000,000', fMB(LM.cost[j])+' MB','');
-    push('  · Store channel', lmSrc+' → derived: Total − FC − Local', '', 'see Data Quality note', fMB(LM.store.cost[j])+' MB',
-      okc(LM.store.cost[j]+LM.fc.cost[j]+LM.local.cost[j], LM.cost[j], 0.002));
-    push('  · FC channel', lmSrc+' → “Cost (FC)”', TH(LM.fc.cost[j]*1e6)+' THB', '÷ 1,000,000', fMB(LM.fc.cost[j])+' MB','');
-    push('  · Local channel', lmSrc+' → “Delivery Cost by truck type (Only Local)”', TH(LM.local.cost[j]*1e6)+' THB', '÷ 1,000,000', fMB(LM.local.cost[j])+' MB','');
-    push('Last-mile sales (RMS)', lmSrc+' → “1.Sales (Store+FC)”', TH(LM.sales[j]*1e6)+' THB', '÷ 1,000,000', fMB(LM.sales[j])+' MB','');
-  }
-  const sums=SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i]+SEG.lastMile[i];
-  push('<b>TOTAL SCM COST</b>', 'B2B (DC incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile FC/Store/Local)', '',
-    'DC Op + Mid-Mile + FC Op + Last-mile', '<b>'+fMB(SEG.total[i])+' MB</b>', okc(sums, SEG.total[i], 0.0001));
-
-  /* ---- TFRS16 verification (live) ---- */
-  const tf=(sh)=>{const a=dcRaw(sh,'total_wh')[i],b=dcRaw(sh,'tfrs16')[i],c2=dcRaw(sh,'transport')[i],g=dcRaw(sh,'grand_total')[i];
-    return `<tr><td class="name">${sh}</td><td>${TH(a)}</td><td>${TH(b)}</td><td>${TH(c2)}</td><td>${TH(a+b+c2)}</td><td>${TH(g)}</td><td>${okc(a+b+c2,g,0.001)}</td></tr>`;};
-
   const KPIDEF=[
     ['Total SCM Cost','All supply-chain cost for the period','B2B (DC Operation incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile FC/Store/Local)','MB','down'],
     ['DC Operation Cost','Cost of running the 10 distribution centers','“Total Warehouse cost” + “Warehouse (TFRS16)” per DC sheet','MB','down'],
@@ -1957,87 +1931,85 @@ function pgGuide(el){
   ].map(r=>[`<span class="name">${r[0]}</span>`,r[1],r[2],r[3],r[4]==='down'?'▼ lower is better':(r[4]==='up'?'▲ higher is better':'—')]);
 
   el.innerHTML = `
-  <div class="card" style="border-left:4px solid var(--accent);margin-bottom:14px">
-    <div class="guide-h">In one line</div>
-    <div class="mini" style="font-size:12.5px">This dashboard answers one question each month: <b>what did the supply chain cost, and what changed?</b>
-    Total SCM = <b>B2B</b> (Distribution Center incl. TFRS16 + Mid-Mile) + <b>B2C</b> (FC Operation + Last-Mile covering FC, Store and Local).</div>
+  <div class="gtop">
+    <div class="gtop-l">
+      <div class="gtop-k">In one line</div>
+      <div class="gtop-t">What did the supply chain cost, and what changed?</div>
+      <div class="gtop-f"><b>Total SCM</b> = <b>B2B</b> (Distribution Center incl. TFRS16 + Mid-Mile) + <b>B2C</b> (FC Operation + Last-Mile: FC, Store &amp; Local)</div>
+    </div>
+    <div class="gtop-r"><div class="gtop-n">${fMB(SEG.total[mi(S.month)])}</div><div class="gtop-u">MB · ${label(S.month)}</div></div>
   </div>
+
+  <div class="section-h"><h5>How to use this dashboard</h5><div class="ln"></div><span class="mini">three steps</span></div>
   <div class="grid g3">
-    <div class="card"><div class="guide-h">① Get around</div>
-      <div class="mini">
-      <b>Month</b> and <b>Monthly / YTD</b> sit top right and drive every card on the page.<br><br>
-      <b>Summary</b> — the whole picture, start here.<br>
-      <b>Unit Cost Analysis</b> — cost per case, kg, trip and order.<br>
-      <b>Distribution Center · Mid-Mile</b> — the B2B half.<br>
-      <b>Fulfillment Center · Last-Mile</b> — the B2C half.<br>
-      <b>Raw Data Export</b> — take any table to Excel.</div>
+    <div class="card step"><div class="step-n">1</div>
+      <div class="step-h">Set the period</div>
+      <div class="step-b">Pick the <b>Month</b> and choose <b>Monthly</b> or <b>YTD</b> at the top right. Every card, chart and table on the page follows that choice.</div>
+      <div class="step-t">${ICO.cal} Month &amp; mode drive everything</div>
     </div>
-    <div class="card"><div class="guide-h">② Read a number</div>
-      <div class="mini">
-      <span class="chip dn">▼ −5.0%</span> cost went <b>down</b> — good.<br>
-      <span class="chip up">▲ +5.0%</span> cost went <b>up</b> — worth a look.<br>
-      <span class="chip na">n/a</span> nothing to compare against yet.<br><br>
-      On volume and utilisation the logic flips: more cases per trip is good, so up is green.<br><br>
-      Pale bar = the period before · solid bar = now · dashed line = the average.</div>
+    <div class="card step"><div class="step-n">2</div>
+      <div class="step-h">Pick your question</div>
+      <div class="step-b">
+        <div class="nvrow"><span class="nvk">Summary</span><span class="nvv">the whole picture — start here</span></div>
+        <div class="nvrow"><span class="nvk">Unit Cost</span><span class="nvv">per case, kg, trip, order</span></div>
+        <div class="nvrow"><span class="nvk">DC · Mid-Mile</span><span class="nvv">the B2B half</span></div>
+        <div class="nvrow"><span class="nvk">FC · Last-Mile</span><span class="nvv">the B2C half</span></div>
+        <div class="nvrow"><span class="nvk">Raw Export</span><span class="nvv">any table to Excel</span></div>
+      </div>
     </div>
-    <div class="card"><div class="guide-h">③ Dig deeper</div>
-      <div class="mini">
-      <b>Click a bar</b> on any chart marked “click to drill in” to open that item — a segment on the Summary trend opens its page, a location bar opens that site.<br><br>
-      <b>Hover</b> anything for the exact value and its share.<br>
-      <b>Hover a badge</b> <span class="badge">like this</span> for the note behind it — gold is a caveat that is safe to use, red needs Finance.<br><br>
-      Every line in <b>What to watch</b> is clickable.</div>
+    <div class="card step"><div class="step-n">3</div>
+      <div class="step-h">Go deeper</div>
+      <div class="step-b">
+        <b>Click</b> a bar on any chart tagged “click to drill in” — it opens that DC, FC or segment.<br>
+        <b>Hover</b> a bar for its exact value and share; hover a <span class="badge">badge</span> for the note behind it.<br>
+        <b>Click</b> any line in <b>What to watch</b> to jump to the evidence.</div>
+      <div class="step-t">${ICO.click} Most things on screen are clickable</div>
     </div>
   </div>
+
+  <div class="card readnum">
+    <div class="guide-h" style="margin-bottom:10px">Reading a number in three seconds</div>
+    <div class="rn-grid">
+      <div class="rn"><span class="chip dn">▼ −5.0%</span><span>Cost went <b>down</b> — good.</span></div>
+      <div class="rn"><span class="chip up">▲ +5.0%</span><span>Cost went <b>up</b> — worth a look.</span></div>
+      <div class="rn"><span class="chip na">n/a</span><span>Nothing to compare against yet.</span></div>
+    </div>
+    <div class="mini" style="margin-top:10px">On <b>volume and utilisation</b> the logic flips — more cases per trip is good, so up is green. In every chart: <b>pale bar</b> = the period before · <b>solid bar</b> = now · <b>dashed line</b> = the average.</div>
+  </div>
+
   <div class="card" style="margin-top:14px">
     <div class="guide-h">Where the numbers come from</div>
-    <div class="mini">
-    <b>DC Cost Data.xlsx</b> → Distribution Center and Mid-Mile &nbsp;·&nbsp;
-    <b>FC Cost Data.xlsx</b> → Fulfillment Center, sales from <b>AO</b> (Axtra Omni Channel) &nbsp;·&nbsp;
-    <b>LMD Cost Data.xlsb</b> → Last-Mile, sales from <b>RMS</b>.<br>
-    AO and RMS are different systems, so the same fulfilment deliveries do not tie exactly between them. Ratios are never mixed across the two — each page states its source, and Unit Cost Analysis lets you switch between them.<br>
-    Full cell-by-cell working is in <b>KPI Calculation.xlsx</b>; the definition of every KPI is in <b>KPI List_Enhanced.xlsx</b>.
-    The detail behind all of this is in sections ④–⑧ below.</div>
+    <div class="srcrow">
+      <div class="src"><div class="src-f">DC Cost Data.xlsx</div><div class="src-d">Distribution Center · Mid-Mile</div></div>
+      <div class="src"><div class="src-f">FC Cost Data.xlsx</div><div class="src-d">Fulfillment Center · sales from <b>AO</b></div></div>
+      <div class="src"><div class="src-f">LMD Cost Data.xlsb</div><div class="src-d">Last-Mile · sales from <b>RMS</b></div></div>
+    </div>
+    <div class="mini" style="margin-top:10px">AO (Axtra Omni Channel) and RMS are different systems, so the same fulfilment deliveries do not tie exactly between them. Ratios are never mixed across the two — each page states its source, and Unit Cost Analysis lets you switch.<br>
+    <b>Cell-by-cell working, the source cross-check, the TFRS16 proof and the automated identity checks all live in <span class="fileref">KPI Calculation.xlsx</span></b> — sheets 9–12. KPI definitions are in <span class="fileref">KPI List_Enhanced.xlsx</span>.</div>
   </div>
-  <div class="section-h"><h5>④ KPI &amp; indicator dictionary</h5><div class="ln"></div><span class="mini">search to find any KPI · <span id="kpiCount"></span></span></div>
-  <div class="card"><input class="kpisearch" type="text" placeholder="Search KPIs — e.g. AOV, cost/order, TFRS16, average…" oninput="filterKPI(this.value)"><div id="kpiTable">${tbl(['KPI / Indicator','Meaning','How it is calculated','Unit','Good direction'],KPIDEF,null,true)}</div></div>
-  <div class="section-h"><h5>⑤ Source cross-check — ${label(S.month)}</h5><div class="ln"></div><span class="mini">every dashboard figure traced to its cell in the source files</span></div>
-  <div class="card">${tbl(['Dashboard metric','Source (file → sheet → row label)','Raw value','Transform','Dashboard value','Check'],rows,null,true)}
-    <div class="note">Rows are located by row LABEL (row numbers shown for reference). Full mapping: KPI List_Enhanced.xlsx (sheets 0–14) and KPI Calculation.xlsx.</div></div>
-  <div class="section-h"><h5>⑥ TFRS16 formula verification — ${label(S.month)}</h5><div class="ln"></div></div>
+
+  <div class="section-h"><h5>KPI &amp; indicator dictionary</h5><div class="ln"></div><span class="mini">type to filter · <span id="kpiCount"></span></span></div>
   <div class="card">
-    <table class="tbl"><thead><tr><th>Sheet</th><th>Total WH cost (THB)</th><th>+ TFRS16 (THB)</th><th>+ Transportation (THB)</th><th>= Sum</th><th>“Grand Total” in file</th><th>Check</th></tr></thead>
-    <tbody>${tf('Dry')}${tf('Fresh')}</tbody></table>
-    <div class="mini" style="margin-top:10px">
-    <b>Where TFRS16 sits in every formula:</b><br>
-    • <b>DC Operation Cost (cards & tables) = “Total Warehouse cost” + “Warehouse (TFRS16)”</b> → TFRS16 <b>included</b>, so DC Operation + Mid-Mile = B2B Grand Total exactly.<br>
-    • <b>Dry DC Cost/Case & Fresh DC Cost/Kg = “Total Warehouse cost” ÷ volume</b> → TFRS16 <b>excluded</b> — this follows the stored rows “DC Cost/Case / DC Cost/Kg.” in the data file itself (file convention, verified ✓ above).<br>
-    • <b>B2B all-in unit cost = “Grand Total” ÷ volume</b> → TFRS16 (and mid-mile) <b>included</b>.<br>
-    • FC side: TFRS16 rows exist in FC ledger sheets but the P&L “1.2 Total Cost” is the source of truth for FC totals.</div>
+    <input class="kpisearch" type="text" placeholder="Search KPIs — e.g. AOV, cost/order, TFRS16, average…" oninput="filterKPI(this.value)">
+    <div id="kpiTable" class="kpibox">${tbl(['KPI / Indicator','Meaning','How it is calculated','Unit','Good direction'],KPIDEF,null,true)}</div>
+    <div class="note">Scroll inside the box · ${KPIDEF.length} entries.</div>
   </div>
-  <div class="card" style="margin-top:14px;border-left:4px solid var(--accent)"><div class="guide-h">⑦ Sales sources — read before comparing any ratio</div>
+
+  <div class="card" style="margin-top:14px;border-left:4px solid var(--accent)"><div class="guide-h">Sales sources — read before comparing any ratio</div>
     <div class="mini">
     <b>Fulfillment Center pages — sales, orders and AOV come from Axtra Omni Channel (AO).</b> Every FC ratio (cost-to-sale, cost per order, AOV) divides by AO sales.<br>
-    <b>Last-Mile pages — sales come from RMS.</b> Every last-mile ratio (cost to sales, driver and helper cost to sales) divides by RMS sales.<br>
-    The two systems report the same fulfillment business differently, so the FC sales figure on the Fulfillment Center page and the FC sales figure on the Last-Mile page will not match, and are not expected to. Compare ratios inside one source only.<br>
-    Cost figures are unaffected: fulfillment operating cost comes from the FC P&amp;L ledger, last-mile cost from the last-mile workbook.
-    Cards that depend on a sales source carry a <span class="badge">sales: AO</span> or <span class="badge">sales: RMS</span> signal — hover it for this note.</div>
+    <b>Last-Mile pages — sales come from RMS.</b> Every last-mile ratio divides by RMS sales.<br>
+    The two systems report the same fulfillment business differently, so the FC sales figure on the Fulfillment Center page and the one on the Last-Mile page will not match, and are not expected to. Compare ratios inside one source only.<br>
+    Cost figures are unaffected. Cards that depend on a sales source carry a <span class="badge">sales: AO</span> or <span class="badge">sales: RMS</span> signal — hover it for this note.</div>
   </div>
-  <div class="card" style="margin-top:14px"><div class="guide-h">⑧ Known data caveats (also badged in place)</div>
+
+  <div class="card" style="margin-top:14px"><div class="guide-h">Known data caveats (also badged in place)</div>
     <div class="mini">1. <b>FC406 Hat Yai</b>: P&L cost rows identical to FC405 for all 2026 months — pending Finance check.<br>
     2. <b>FC409 Rangsit</b>: no P&L block yet — cost taken from its ledger sheet (no sales/orders).<br>
     3. <b>FC403</b>: P&L vs ledger gap −0.76 MB (Jun-26); P&L used as source of truth.<br>
     4. <b>MKD1 / MKD2</b>: negative months possible (credit/allocation entries in source).<br>
     5. <b>Fresh units</b>: stored per Kg — multiply by 1,000 for THB/Ton.<br>
     6. <b>Last-Mile</b>: 2026 only — the LMD file starts in January 2026, so last-mile has no year-on-year comparison until 2027.</div>
-  </div>
-  <div class="section-h"><h5>⑨ Automated calculation self-check</h5><div class="ln"></div><span class="mini">every identity re-computed live in your browser · all ${MONTHS.length} months with data</span></div>
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-      <div class="kv" style="font-size:28px"><b>${SC.pass}</b> <span class="unit">checks passed</span></div>
-      ${SC.fail? `<span class="chip up">⚠ ${SC.fail} to review</span>` : `<span class="chip dn">▼ 0 discrepancies — all consistent</span>`}
-    </div>
-    <div class="mini">Runs for every month with data: <b>B2B Grand-Total identity</b> (Total Warehouse cost + TFRS16 + Transport = Grand Total) for Dry, Fresh and all 10 DCs; <b>stored vs recomputed unit costs</b> (Dry DC/Case, B2B Dry/Case, Dry MM/Trip, Fresh DC/Kg); <b>FC Total = Operation + Last-Mile</b> for all 7 FCs; and <b>Total SCM = DC + Mid-Mile + FC Operation + Last-Mile</b>. Tolerances: identities 0.15%, stored unit costs 1% (source rounds to 2 dp).</div>
-    ${SC.fail? `<div style="margin-top:12px">${tbl(['Check','Month','Recomputed','In file','Δ'],SC.rows.slice(0,60).map(r=>[r.name,label(r.mo),fmt(r.a,3),fmt(r.b,3),(r.d*100).toFixed(2)+'%']))}</div>${SC.rows.length>60?`<div class="note">Showing first 60 of ${SC.rows.length} items.</div>`:''}` : `<div class="note" style="margin-top:10px">✓ Every recomputed figure reconciles to the value stored in the source files within tolerance — no miscalculations detected in the current data.</div>`}
   </div>`;
 }
 
@@ -2048,6 +2020,8 @@ function pgGuide(el){
 const RAWSEL = { ds:'summary', cols:null };
 /* small inline icons for the export interface (no external icon font) */
 const ICO = {
+  cal:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  click:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9l10 3.5-4 1.6-1.6 4z"/><path d="M5 3v3M3 5h3M5 13v3M3 15h3"/></svg>',
   check:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
   all:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/></svg>',
   clear:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
