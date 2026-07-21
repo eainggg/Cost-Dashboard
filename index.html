@@ -226,7 +226,7 @@ footer{padding:18px 28px;font-size:10.5px;color:var(--on-dark-3);border-top:1px 
 <aside>
   <div class="logo"><div class="mk"><div class="sq"><svg width="19" height="19" viewBox="0 0 24 24" fill="#fff"><path d="M4 20V10h3.5v10H4zm6.25 0V4h3.5v16h-3.5zm6.25 0v-7H20v7h-3.5z"/></svg></div><h1>SCM COST<span>Dashboard</span></h1></div></div>
   <nav id="nav"></nav>
-  <div class="sfoot">Data: Jan-2025 → June 2026<br>B2C data from Jan-2026<br>Generated 2026-07-21 · v3.1 offline · interactive</div>
+  <div class="sfoot">Data: Jan-2025 → June 2026<br>B2C data from Jan-2026<br>Generated 2026-07-21 · v9.0 offline · interactive</div>
 </aside>
 <main>
   <div id="topbar">
@@ -1450,7 +1450,7 @@ function fcOverview(el, chipsRow){
   const aovAvg = aovRank.length? aovRank.reduce((a,b)=>a+b.v,0)/aovRank.length : null;
   el.innerHTML = chipsRow + `
   <div class="grid cards4">
-    ${kpi({title:'B2C FC Operation Cost',val:fMB(pSum(op)),unit:'MB',sub:'last-mile excluded for now',chips:[chip(pSum(op),pPrev(op),cmpLbl())]})}
+    ${kpi({title:'B2C FC Operation Cost',val:fMB(pSum(op)),unit:'MB',sub:'delivery reported under Last-Mile',chips:[chip(pSum(op),pPrev(op),cmpLbl())]})}
     ${kpi({title:'Sales (GMV)',val:fMB(pSum(sales)),unit:'MB',sub:'e-commerce gross merchandise value',badge:' '+srcBadge(),chips:[chip(pSum(sales),pPrev(sales),cmpLbl(),true)]})}
     ${kpi({title:'Cost-to-Sale',val:c2s!=null?c2s.toFixed(1):'–',unit:'%',sub:'FC operation ÷ sales',badge:' '+srcBadge()})}
     ${kpi({title:'Average AOV',val:aovAll?fmt(aovAll,0):'–',unit:'THB/order',sub:'Σ sales ÷ Σ orders'})}
@@ -1463,7 +1463,7 @@ function fcOverview(el, chipsRow){
   <div class="card" style="margin-top:14px"><h4>FC benchmark — ${modeLbl()}</h4>
     ${tbl(['Fulfillment Center','Sales (MB)','AOV (THB)','FC Operation (MB)','Cost-to-Sale','Cost/Order (THB)',cmpLbl()],rows,
       ['<b>B2C Total</b>',fMB(pSum(sales)),aovAll?fmt(aovAll,0):'–',fMB(pSum(op)),pSum(sales)?(pSum(op)/pSum(sales)*100).toFixed(1)+'%':'–','',''])}
-    <div class="note">Source: FC P&L sheet (KTHB → MB). Cost = FC operation only (last-mile excluded for now). FC409 from its account sheet. Cost/Order shown for the selected month.</div>
+    <div class="note">Source: FC P&L sheet (KTHB → MB). Cost = FC operation only; its delivery sits in the Last-Mile total. FC409 from its account sheet. Cost/Order shown for the selected month.</div>
   </div>`;
   mkChart('chFCsc',{type:'bar',data:{labels:FC_ORDER.map(c=>FC_SHORT[c]),datasets:[
     {label:'Sales',data:FC_ORDER.map(c=>pSum(FC[c].sales)),backgroundColor:C.teal,borderRadius:4,dl:dlMB1,drill:i=>`S.fc='${FC_ORDER[i]}';render()`},
@@ -1488,7 +1488,7 @@ function fcDetail(el, chipsRow, code){
   <div class="grid cards4">
     ${kpi({title:f.name+' — Sales (GMV)',val:sales?fMB(sales):'–',unit:'MB',chips:[chip(sales,pPrev(f.sales),cmpLbl(),true)],sub:f.aov[i]?('AOV '+fmt(f.aov[i],0)+' THB'):'', badge:' '+srcBadge()+(code==='FC406'?' '+BADGES.fc406:'')+(code==='FC409'?' '+BADGES.fc409:'')+(code==='FC403'?' '+BADGES.fc403:'')})}
     ${kpi({title:'Orders',val:ord?fmt(ord,0):'–',unit:'orders '+(S.mode==='Y'?'(selected month)':''),chips:ord?[chip(ord,f.orders[i-1],'MoM',true)]:[],sub:ord?fmt(ord/(alignPnlDays(code,i)||30),0)+' orders/day':''})}
-    ${kpi({title:'FC Operation Cost',val:fMB(t),unit:'MB',sub:'last-mile excluded for now',chips:[chip(t,pPrev(f.op),cmpLbl())]})}
+    ${kpi({title:'FC Operation Cost',val:fMB(t),unit:'MB',sub:'delivery reported under Last-Mile',chips:[chip(t,pPrev(f.op),cmpLbl())]})}
     ${kpi({title:'Cost / Order',val:cpo?fmt(cpo,0):'–',unit:'THB',sub:cpo?'operation only':'no order data',chips:cpo&&f.orders[i-1]?[chip(cpo,f.op[i-1]*1e6/f.orders[i-1],'MoM')]:[]})}
   </div>
   <div class="grid g3" style="margin-top:14px">
@@ -1930,7 +1930,7 @@ function pgGuide(el){
     return `<tr><td class="name">${sh}</td><td>${TH(a)}</td><td>${TH(b)}</td><td>${TH(c2)}</td><td>${TH(a+b+c2)}</td><td>${TH(g)}</td><td>${okc(a+b+c2,g,0.001)}</td></tr>`;};
 
   const KPIDEF=[
-    ['Total SCM Cost','All supply-chain cost for the period','DC Operation + Mid-Mile + FC Operation (last-mile excluded for now)','MB','down'],
+    ['Total SCM Cost','All supply-chain cost for the period','B2B (DC Operation incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile FC/Store/Local)','MB','down'],
     ['DC Operation Cost','Cost of running the 10 distribution centers','“Total Warehouse cost” + “Warehouse (TFRS16)” per DC sheet','MB','down'],
     ['Mid-Mile Cost','Transport from DC to stores','“Transportation Cost” row per DC sheet','MB','down'],
     ['FC Operation Cost','Cost of running the 7 fulfillment centers (e-commerce)','P&L “- Operation Cost” = Total Cost − Last-mile','MB','down'],
