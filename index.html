@@ -446,23 +446,35 @@ function fcLmOf(code){
   const j = LM_LAST;
   return M.map((_,k)=> k===j ? LM_SITE[code].costMB : 0);
 }
+/* ===================== TOTAL SCM COST — THE ONE FORMULA =====================
+   Total SCM = B2B (Distribution Center + Mid-Mile) + B2C (FC Operation + Last-Mile)
+     · Distribution Center cost INCLUDES TFRS16  ("Total Warehouse cost" + "Warehouse (TFRS16)")
+     · Last-Mile is the WHOLE delivery operation from LMD Cost Data.xlsb:
+       FC + Store + Local  ("Cost (Store+FC+Local)")
+     · The FC P&L "− Last mile" line is DELIBERATELY EXCLUDED from this formula,
+       so the FC delivery is counted once only — from the LMD file.
+       FC Operation is already net of it (P&L: Operation = Total Cost − Last mile),
+       so nothing is double-counted and nothing is missed.
+   Jun-26: 215.88 + 271.34 + 47.70 + 283.40 = 818.32 MB
+   ========================================================================= */
 const SEG = {
-  b2bWH:  add(dcWH('Dry'), dcWH('Fresh')),      /* DC Operation (incl TFRS16) */
+  b2bWH:  add(dcWH('Dry'), dcWH('Fresh')),      /* DC Operation — TFRS16 INCLUDED */
   midMile:add(dcMB('Dry','transport'), dcMB('Fresh','transport')),
-  fcOp:   sumFC('op'),
-  lmNet:  LM.ok ? LM.cost : M.map(_=>0),        /* Store + FC + Local delivery */
+  fcOp:   sumFC('op'),                          /* FC operation, already excl. its own last-mile */
+  lastMile: LM.ok ? LM.cost : M.map(_=>0),      /* LMD: FC + Store + Local */
+  lmNet:  LM.ok ? LM.cost : M.map(_=>0),
 };
-Object.defineProperty(SEG,'lmFC',{get(){ return lmFCArr(); }});   /* FC scope, active source */
-/* Scope-aware series. S.scope: 'FC' (default, comparable with history) | 'NET' */
-Object.defineProperty(SEG,'lastMile',{get(){ return S.scope==='NET' ? SEG.lmNet : SEG.lmFC; }});
-Object.defineProperty(SEG,'total',{get(){ const lm=SEG.lastMile;
-  return M.map((_,i)=> SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i]+(lm[i]||0)); }});
-Object.defineProperty(SEG,'b2c',{get(){ const lm=SEG.lastMile; return M.map((_,i)=> SEG.fcOp[i]+(lm[i]||0)); }});
+Object.defineProperty(SEG,'lmFC',{get(){ return lmFCArr(); }});   /* FC P&L view — reference only, NOT in Total SCM */
+SEG.total = M.map((_,i)=> SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i]+(SEG.lastMile[i]||0));
+SEG.b2c   = M.map((_,i)=> SEG.fcOp[i]+(SEG.lastMile[i]||0));
+/* months where the LMD file has no data carry no last-mile — flagged, never silently zeroed */
+const lmMissing = i => !LM.ok || !LM.has[i];
 SEG.b2b   = M.map((_,i)=> SEG.b2bWH[i]+SEG.midMile[i]);
 const FC_START = mi('2026-01');   // FC data begins
 /* Total SCM has one fixed definition; the whole delivery operation lives on the
    Last-Mile page. Kept as a constant so the wording stays identical everywhere. */
-const SCOPE_TXT = { FC:'Last-mile counted in Total SCM is the delivery cost inside the FC P&L (fulfillment orders). Store and Local delivery are reported on the Last-Mile page.' };
+const SCOPE_TXT = { FC:'Total SCM = B2B (Distribution Center incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile). Last-Mile is the whole delivery operation from the LMD file — FC + Store + Local. The FC P&L last-mile line is excluded from this formula so FC delivery is counted once only.' };
+const TOTAL_TXT = SCOPE_TXT.FC;
 
 /* ---------- state ---------- */
 const S = { page:'summary', month: M[LAST], mode:'M', dc:'OVERVIEW', fc:'OVERVIEW', lm:'OVERVIEW', scope:'FC', src:'PNL' };
@@ -1014,10 +1026,10 @@ const srcBadge = () => badge('source: '+(curSrc()==='LMD'?'LMD file / RMS':'FC P
 /* =========================== SUMMARY =========================== */
 function pgSummary(el){
   const i = mi(S.month);
-  /* Total SCM has ONE definition: DC Operation + Mid-Mile + FC Operation +
-     the last-mile booked in the FC P&L. Store and Local delivery are reported
-     on the Last-Mile page, which owns the whole delivery operation. */
-  const lmUse = SEG.lmFC;
+  /* Total SCM = B2B (DC incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile).
+     Last-Mile is the whole delivery operation — FC + Store + Local — from the LMD
+     file. The FC P&L last-mile line is excluded so FC delivery is counted once. */
+  const lmUse = SEG.lastMile;
   const totArr  = M.map((_,k)=> SEG.b2bWH[k]+SEG.midMile[k]+SEG.fcOp[k]+(lmUse[k]||0));
   const pSumT = a => pSum(a), pPrevT = a => pPrev(a);
   const tot=pSum(totArr), b2bwh=pSum(SEG.b2bWH), mm=pSum(SEG.midMile), fco=pSum(SEG.fcOp);
@@ -1036,7 +1048,7 @@ function pgSummary(el){
   /* Each item states a fact and links to the page that explains it. */
   const watch=[];
   watch.push({dir:(dTot==null?'':(dTot>0.0005?'up':(dTot<-0.0005?'dn':''))), go:['guide',null,'Sources'],
-    html:`<b>Total SCM ${fMB(tot)} MB</b>${dTot==null?'':` — <span class="${dTot>0?'pos':'neg'}">${fPct(dTot)} ${cmpLbl()}</span> vs ${fMB(prevTot)} MB`}. Last-mile counted here: the FC P&L share.`});
+    html:`<b>Total SCM ${fMB(tot)} MB</b>${dTot==null?'':` — <span class="${dTot>0?'pos':'neg'}">${fPct(dTot)} ${cmpLbl()}</span> vs ${fMB(prevTot)} MB`}. Last-mile counted here: FC + Store + Local (LMD file).`});
   if(up.length) watch.push({dir:'up', go:PAGE_OF[up[0].n],
     html:`Largest increase: <b>${up[0].n}</b> <span class="pos">+${fMB(up[0].d)} MB (${fPct(up[0].p)})</span>.`});
   if(dn.length) watch.push({dir:'dn', go:PAGE_OF[dn[0].n],
@@ -1073,13 +1085,14 @@ function pgSummary(el){
   if(c2sList.length) tk.push(`B2C cost-to-sale (FC operation ÷ sales): ${c2sList.map(x=>`${FC_SHORT[x.c]} ${(x.r*100).toFixed(1)}%`).join(' · ')} (FC406 excluded).`);
 
   const lmSeg=pSum(lmUse);
-  const scopeNote = 'Last-mile here is the delivery booked in the FC P&amp;L; Store and Local delivery are on the Last-Mile page.';
+  const scopeNote = 'Last-mile = FC + Store + Local (LMD file); distribution-center cost includes TFRS16.'
+    + (lmMissing(i) ? ' <b>No last-mile data for this month</b> — the total below covers B2B + FC operation only.' : '');
   const netBanner = '';
   el.innerHTML = netBanner + `
   <div class="grid" style="grid-template-columns:1.5fr 1fr 1fr;margin-bottom:14px">
     ${kpi({hero:true,title:'Total SCM Cost — '+modeLbl(), val:fMB(tot), unit:'MB',
-      sub:'B2B '+fMB(b2bwh+mm)+' MB · B2C '+fMB(fco+lmSeg)+' MB &nbsp;|&nbsp; '+scopeNote,
-      badge:' '+badge('one fixed definition','Total SCM = Distribution Center operation + Mid-Mile transport + Fulfillment Center operation + the last-mile booked in the FC P&L. Store and Local delivery belong to the whole delivery operation and are reported on the Last-Mile page, so nothing is counted twice.'),
+      sub:'B2B '+fMB(b2bwh+mm)+' MB (DC '+fMB(b2bwh)+' + Mid-Mile '+fMB(mm)+') · B2C '+fMB(fco+lmSeg)+' MB (FC op '+fMB(fco)+' + Last-Mile '+fMB(lmSeg)+') &nbsp;|&nbsp; '+scopeNote,
+      badge:' '+badge(lmMissing(i)?'partial — no last-mile':'B2B + B2C', TOTAL_TXT + (lmMissing(i)?' NOTE: the LMD file has no data for this month, so last-mile is not included in this total.':'')),
       chips:[chip(tot,prevTot,cmpLbl()), `<span class="chip lbl">YoY n/a — B2C scope added 2026</span>`]})}
     ${segCard('B2B · Distribution Center', SEG.b2bWH, b2bwh)}
     ${segCard('B2B · Mid-Mile Transport', SEG.midMile, mm)}
@@ -1091,7 +1104,7 @@ function pgSummary(el){
         return `<button class="watch" onclick="goTo('${g[0]}'${arg})">
           <span class="wdot ${w.dir}"></span><span class="wtx">${w.html}</span><span class="wgo">${g[2]||'Open'} ›</span></button>`;}).join('')}</div>
     ${segCard('B2C · FC Operation', SEG.fcOp, fco, ' '+BADGES.fc409)}
-    ${segCard('B2C · Last-Mile Delivery', lmUse, lmSeg, ' '+badge('FC P&L','The “− Last mile” rows of the FC P&L (source: Axtra Omni Channel). The full delivery operation — Store, FC and Local, sourced from the LMD file — is on the Last-Mile page.'))}
+    ${segCard('B2C · Last-Mile Delivery', lmUse, lmSeg, ' '+badge('FC + Store + Local','The whole delivery operation from LMD Cost Data.xlsb — row “Cost (Store+FC+Local)”. This is what Total SCM counts. The FC P&L “− Last mile” line is a different view of the FC portion only and is deliberately excluded from the total so nothing is counted twice.'))}
   </div>
   <div class="card" style="margin-top:14px"><h4>Supporting facts — ${modeLbl()}</h4>${tk.map(t=>`<div class="tk"><div class="dot"></div><div>${t}</div></div>`).join('')}</div>
   <div class="section-h"><h5>Cost trend — 18 months</h5><div class="ln"></div><span class="mini">stacked by segment · labels = monthly total (MB) · dashed = period average · click a segment to open its page</span></div>
@@ -1809,7 +1822,7 @@ function runSelfCheck(){
     /* FC: Total Cost = Operation + Last-Mile */
     FC_ORDER.forEach(c=>{ const f=FC[c]; if(f.total[i]) chk(f.name+' — Total = Operation + Last-Mile', mo, f.op[i]+f.lm[i], f.total[i], 0.01); });
     /* Total SCM = sum of the four reported segments */
-    if(SEG.total[i]) chk('Total SCM = DC + Mid-Mile + FC Operation (last-mile excluded)', mo, SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i], SEG.total[i], 1e-6);
+    if(SEG.total[i]) chk('Total SCM = DC (incl TFRS16) + Mid-Mile + FC Operation + Last-Mile (FC+Store+Local)', mo, SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i]+SEG.lastMile[i], SEG.total[i], 1e-6);
   }
   return {pass, fail:out.length, rows:out};
 }
@@ -1858,7 +1871,10 @@ function pgGuide(el){
     else push(`${f.name} — total cost`, `FC Cost Data.xlsx → [${c}] → “Total Warehouse cost” (row 376) — no P&L block yet`, TH(f.total[i]*1e6)+' THB', '÷ 1,000,000', fMB(f.total[i])+' MB','');
   });
   push('B2C FC operation', 'Σ P&L “- Operation Cost (KTHB)” + FC409 (376 − 225)', '', 'Σ ÷ 1,000', fMB(SEG.fcOp[i])+' MB','');
-  push('B2C last-mile — FC scope', 'FC Cost Data.xlsx → [P&L] → Σ “- Last mile (KTHB)”', fmt(SEG.lmFC[i]*1e3,0)+' KTHB', 'Σ ÷ 1,000', fMB(SEG.lmFC[i])+' MB','');
+  push('B2C last-mile — IN TOTAL SCM', 'Summary Last mile … .xlsb → [Data] → “Cost (Store+FC+Local)” (FC + Store + Local)',
+    TH(SEG.lastMile[i]*1e6)+' THB', '÷ 1,000,000', fMB(SEG.lastMile[i])+' MB','');
+  push('FC P&L last-mile — EXCLUDED', 'FC Cost Data.xlsx → [P&L] → Σ “- Last mile (KTHB)” — reference only, not added to Total SCM',
+    fmt(SEG.lmFC[i]*1e3,0)+' KTHB', 'not added', '<span class="mut">excluded</span>','');
   if(LM.ok){
     const j=lmIdx(), stale=lmStale();
     const lmSrc = 'Summary Last mile cost … .xlsx → [Data Last-mile]';
@@ -1871,9 +1887,8 @@ function pgGuide(el){
     push('Last-mile sales (RMS)', lmSrc+' → “1.Sales (Store+FC)”', TH(LM.sales[j]*1e6)+' THB', '÷ 1,000,000', fMB(LM.sales[j])+' MB','');
   }
   const sums=SEG.b2bWH[i]+SEG.midMile[i]+SEG.fcOp[i]+SEG.lastMile[i];
-  push('<b>TOTAL SCM COST</b>', 'sum of the four segments, using the selected last-mile scope', '',
-    'DC Op + Mid-Mile + FC Op + Last-mile ('+(S.scope==='NET'?'all delivery channels':'FC scope')+')',
-    '<b>'+fMB(SEG.total[i])+' MB</b>', okc(sums, SEG.total[i], 0.0001));
+  push('<b>TOTAL SCM COST</b>', 'B2B (DC incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile FC/Store/Local)', '',
+    'DC Op + Mid-Mile + FC Op + Last-mile', '<b>'+fMB(SEG.total[i])+' MB</b>', okc(sums, SEG.total[i], 0.0001));
 
   /* ---- TFRS16 verification (live) ---- */
   const tf=(sh)=>{const a=dcRaw(sh,'total_wh')[i],b=dcRaw(sh,'tfrs16')[i],c2=dcRaw(sh,'transport')[i],g=dcRaw(sh,'grand_total')[i];
@@ -1995,9 +2010,9 @@ const RAW_DS = {
       ['dc','DC Operation (MB)', r=>SEG.b2bWH[r.i]],
       ['mm','Mid-Mile (MB)', r=>SEG.midMile[r.i]],
       ['fcop','FC Operation (MB)', r=>SEG.fcOp[r.i]],
-      ['lmfc','Last-Mile FC scope (MB)', r=>lmFC_PNL[r.i]],
-      ['lmnet','Last-Mile total, Store+FC+Local (MB)', r=>SEG.lmNet[r.i]],
-      ['total','Total SCM, FC scope (MB)', r=>SEG.b2bWH[r.i]+SEG.midMile[r.i]+SEG.fcOp[r.i]+(lmFC_PNL[r.i]||0)],
+      ['lmfc','FC P&L last-mile — excluded from total (MB)', r=>lmFC_PNL[r.i]],
+      ['lmnet','Last-Mile in Total SCM — FC+Store+Local (MB)', r=>SEG.lastMile[r.i]],
+      ['total','Total SCM (MB)', r=>SEG.total[r.i]],
       ['b2b','B2B total (MB)', r=>SEG.b2bWH[r.i]+SEG.midMile[r.i]],
     ]},
   dc: { name:'Distribution Center — by site and month', unit:'MB / cases / tons',
