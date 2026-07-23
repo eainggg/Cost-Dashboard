@@ -789,10 +789,12 @@ function renderAxisChart(cfg, W, H, id){
       const pct = denom>0? (Math.abs(v)/denom*100).toFixed(1) : null;
       const cat = d.label ? labels[i] : '';
       let shareTok = '';
-      if(pct!=null && !opts.noShare){   /* opts.noShare hides the share where it is not meaningful */
+      if(pct!=null && !opts.noShare){
         if(opts.shareOf) shareTok = `${pct}% of ${opts.shareOf}`;
-        else if(stacked) shareTok = `${pct}% of ${labels[i]} total`;
-        else             shareTok = `${pct}% of the total`;
+        else if(stacked) shareTok = `${pct}% of ${labels[i]} total`;   /* segment ÷ this column's total */
+        /* A plain (non-stacked) bar's share of its whole series is rarely meaningful —
+           e.g. one month as a % of the year — so it is shown ONLY when a chart names the
+           whole via opts.shareOf (the rankings do). Trends therefore show no share. */
       }
       const subParts = [];
       if(cat && shareTok.indexOf(cat)<0) subParts.push(cat);
@@ -1389,7 +1391,7 @@ function pgUnit(el){
   mkChart('chUFC',{type:'bar',data:{labels:cpoRank.map(r=>r.name),datasets:[
     {label:'Fulfillment operation / order',data:cpoRank.map(r=>r.op),backgroundColor:SEGCOL.fcop,stack:'s',borderRadius:3,dl:{dec:0}},
     {label:'Last-mile delivery / order',   data:cpoRank.map(r=>r.lm),backgroundColor:SEGCOL.lm,  stack:'s',borderRadius:3,dl:{dec:0}},
-  ]},options:{indexAxis:'y',...padR,plugins:{avg:{value:cpoNet||0,label:'B2C average '+(cpoNet!=null?fmt(cpoNet,0):'')}},
+  ]},options:{indexAxis:'y',...padR,shareOf:'the cost per order',plugins:{avg:{value:cpoNet||0,label:'B2C average '+(cpoNet!=null?fmt(cpoNet,0):'')}},
     scales:{x:{...gridY,stacked:true,title:{display:true,text:'THB per order'}},y:{...gridX,stacked:true}}}});
 }
 
@@ -1768,8 +1770,8 @@ function lmOverview(el, head){
     line({label:'Period average',type:'line',data:trend.map(_=>avg),borderColor:C.gold,dl:{dec:0,mode:'last'}})]},
     options:{...padT,scales:{x:gridX,y:{...gridY,title:{display:true,text:'MB'}}}}});
   mkChart('lmLabor',{type:'bar',data:{labels:lmLabels(),datasets:[
-    {label:'Drivers',data:lmSeries(LM.driver),backgroundColor:LM_LABOR_COLOR.driver,stack:'s',drill:"S.lm='PERF';render()"},
-    {label:'Helpers',data:lmSeries(LM.helper),backgroundColor:LM_LABOR_COLOR.helper,stack:'s',drill:"S.lm='PERF';render()"}]},
+    {label:'Drivers',data:lmSeries(LM.driver),backgroundColor:LM_LABOR_COLOR.driver,stack:'s'},
+    {label:'Helpers',data:lmSeries(LM.helper),backgroundColor:LM_LABOR_COLOR.helper,stack:'s'}]},
     options:{...padT,plugins:{stackTotals:dlMB0},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true,title:{display:true,text:'MB'}}}}});
 }
 
@@ -1851,7 +1853,7 @@ function lmFC(el, head){
   </div>
   <div class="card" style="margin-top:14px">${chBox('lmFc3',260,'FC labor cost — drivers and helpers (MB)')}</div>`;
   mkChart('lmFc1',{type:'bar',data:{labels:lmLabels(),datasets:[
-    {label:'Sales',data:lmSeries(f.sales),backgroundColor:C.mist,borderRadius:3,yAxisID:'y',drill:"go('fc')"},
+    {label:'Sales',data:lmSeries(f.sales),backgroundColor:C.mist,borderRadius:3,yAxisID:'y'},
     line({label:'Delivery cost',type:'line',data:lmSeries(f.cost),borderColor:'#7C3AED',yAxisID:'y2',dl:{dec:1,mode:'last'}})]},
     options:{...padR,scales:{x:gridX,y:{...gridY,title:{display:true,text:'Sales (MB)'}},y2:{position:'right',grid:{display:false},border:{display:false}}}}});
   mkChart('lmFc2',{type:'bar',data:{labels:lmLabels(),datasets:[
@@ -1887,8 +1889,8 @@ function lmLocal(el, head){
     <div class="card">${chBox('lmLo2',280,'Local cost by truck type (MB)')}</div>
   </div>`;
   mkChart('lmLo1',{type:'bar',data:{labels:lmLabels(),datasets:[
-    {label:'Local cost',data:lmSeries(l.cost),backgroundColor:LM_CH_COLOR.local,borderRadius:3,dl:dlMB1,drill:"S.lm='OVERVIEW';render()"}]},
-    options:{...padT,noShare:true,plugins:{legend:{display:false}},scales:{x:gridX,y:{...gridY,title:{display:true,text:'MB'}}}}});
+    {label:'Local cost',data:lmSeries(l.cost),backgroundColor:LM_CH_COLOR.local,borderRadius:3,dl:dlMB1}]},
+    options:{...padT,plugins:{legend:{display:false}},scales:{x:gridX,y:{...gridY,title:{display:true,text:'MB'}}}}});
   mkChart('lmLo2',{type:'bar',data:{labels:lmLabels(),datasets:[
     {label:'4W',data:lmSeries(l.cost4W),backgroundColor:LM_TRUCK_COLOR['4W'],stack:'s'},
     {label:'2W',data:lmSeries(l.cost2W),backgroundColor:LM_TRUCK_COLOR['2W'],stack:'s'}]},
