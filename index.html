@@ -782,11 +782,23 @@ function renderAxisChart(cfg, W, H, id){
       const dr = d.drill ? (typeof d.drill==='function' ? d.drill(i) : (Array.isArray(d.drill)? d.drill[i] : d.drill)) : null;
       const gO = dr ? `<g class="drill" onclick="${dr}">` : `<g>`;   /* drill-down: pointer + onclick when a target is defined */
       let denom=0; if(stacked){ barDss.forEach(dd=>{ const vv=nz(dd.data[i]); if(vv!=null) denom+=Math.abs(vv); }); } else { d.data.forEach(vv=>{ vv=nz(vv); if(vv!=null) denom+=Math.abs(vv); }); }
-      const shPct = denom>0? ` · ${(Math.abs(v)/denom*100).toFixed(1)}% share` : '';
-      const t=tip(d.label || labels[i],
-        fmt(v, d.dec!=null?d.dec:1)+(d.suffix||''),
-        [d.label? labels[i] : '', (shPct? shPct.replace(/^ · /,'') : ''), (dr?'click to open ›':'')].filter(Boolean).join(' · '),
-        fillOf(i));
+      /* share = this value ÷ the denominator, named explicitly so the card says
+         what it is a share OF: a stacked segment is a share of that column's total;
+         a plain/ranked bar is a share of the total across all bars. A chart may pass
+         opts.shareOf to name the whole (e.g. "Total SCM"). */
+      const pct = denom>0? (Math.abs(v)/denom*100).toFixed(1) : null;
+      const cat = d.label ? labels[i] : '';
+      let shareTok = '';
+      if(pct!=null){
+        if(opts.shareOf) shareTok = `${pct}% of ${opts.shareOf}`;
+        else if(stacked) shareTok = `${pct}% of ${labels[i]} total`;
+        else             shareTok = `${pct}% of the total`;
+      }
+      const subParts = [];
+      if(cat && shareTok.indexOf(cat)<0) subParts.push(cat);
+      if(shareTok) subParts.push(shareTok);
+      if(dr) subParts.push('click to open ›');
+      const t=tip(d.label || labels[i], fmt(v, d.dec!=null?d.dec:1)+(d.suffix||''), subParts.join(' · '), fillOf(i));
       if(horiz){
         const y = bandPos(i) - bw/2;
         const x0=sx(a), x1=sx(b);
@@ -926,7 +938,8 @@ function renderDoughnut(cfg, W, H, id){
     const col=Array.isArray(d.backgroundColor)? d.backgroundColor[i] : d.backgroundColor;
     const dr = d.drill ? (typeof d.drill==='function' ? d.drill(i) : (Array.isArray(d.drill)? d.drill[i] : d.drill)) : null;
     const gO = dr ? `<g class="drill" onclick="${dr}">` : `<g>`;
-    out.push(`${gO}<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${laf} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)} A${rin} ${rin} 0 ${laf} 0 ${x3.toFixed(1)} ${y3.toFixed(1)} Z" fill="${col}"${tip(labels[i], fmt(raw[i],1)+(cfg.data.suffix||''), (frac*100).toFixed(1)+'% of total'+(dr?' · click to open ›':''), col)}></path></g>`);
+    const arcWhole = (cfg.options && cfg.options.shareOf) || 'the total';
+    out.push(`${gO}<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${laf} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)} A${rin} ${rin} 0 ${laf} 0 ${x3.toFixed(1)} ${y3.toFixed(1)} Z" fill="${col}"${tip(labels[i], fmt(raw[i],1)+(cfg.data.suffix||''), (frac*100).toFixed(1)+'% of '+arcWhole+(dr?' · click to open ›':''), col)}></path></g>`);
     if(frac>=0.07){ const am=(a0+a1)/2, rm=(R+rin)/2;
       out.push(txt(cx+rm*Math.cos(am), cy+rm*Math.sin(am)+3, (frac*100).toFixed(0)+'%', {color:'#fff', weight:800, size:10}));
     }
@@ -1265,7 +1278,7 @@ function pgSummary(el){
     {label:'Mid-Mile',data:sl(SEG.midMile),backgroundColor:SEGCOL.mm,stack:'s',drill:i=>`goMonth('mm','${MONTHS[i]}')`},
     {label:'FC Operation',data:sl(SEG.fcOp),backgroundColor:SEGCOL.fcop,stack:'s',drill:i=>`goMonth('fc','${MONTHS[i]}')`},
     {label:'Last-Mile',data:sl(SEG.lastMile),backgroundColor:SEGCOL.lm,stack:'s',drill:i=>`goMonth('lm','${MONTHS[i]}')`},
-  ]},options:{...padT,plugins:{stackTotals:dlMB0,avg:{value:totAvg,label:'avg '+(totAvg!=null?fMB(totAvg):'')+' MB'}},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true,title:{display:true,text:'MB'}}}}});
+  ]},options:{...padT,shareOf:'Total SCM that month',plugins:{stackTotals:dlMB0,avg:{value:totAvg,label:'avg '+(totAvg!=null?fMB(totAvg):'')+' MB'}},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true,title:{display:true,text:'MB'}}}}});
 
   /* all four segments — the same scope as Total SCM, coloured to MATCH the cost trend:
      each segment carries its trend hue; the past-period bar is the same hue, paler. */
@@ -1431,7 +1444,7 @@ function dcOverview(el, chipsRow){
     options:{...padT,plugins:{stackTotals:dlMB0},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true,title:{display:true,text:'MB'}}}}});
   const rank=DC_ORDER.map(sh=>({sh,v:pSum(dcWH(sh)),dry:RAW.dc[sh].temp==='Dry'})).sort((a,b)=>b.v-a.v);
   mkChart('chDCrank',{type:'bar',data:{labels:rank.map(r=>r.sh),datasets:[{label:'DC cost',data:rank.map(r=>r.v),backgroundColor:rank.map(r=>DC_COLOR[r.sh]),borderRadius:4,dl:dlMB1,drill:i=>`S.dc='${rank[i].sh}';render()`}]},
-    options:{indexAxis:'y',...padR,plugins:{legend:{display:false},avg:{value:rank.reduce((a,b)=>a+b.v,0)/(rank.length||1),label:'avg'}},scales:{x:{...gridY,title:{display:true,text:'MB'}},y:gridX}}});
+    options:{indexAxis:'y',...padR,shareOf:'total DC cost',plugins:{legend:{display:false},avg:{value:rank.reduce((a,b)=>a+b.v,0)/(rank.length||1),label:'avg'}},scales:{x:{...gridY,title:{display:true,text:'MB'}},y:gridX}}});
 }
 function dcDetail(el, chipsRow, sh){
   const i=mi(S.month); const isDry=RAW.dc[sh].temp==='Dry'; const nm=RAW.dc[sh].name;
@@ -1476,9 +1489,9 @@ function dcDetail(el, chipsRow, sh){
   mkChart('chStruct',{type:'bar',data:{labels:LBL,datasets:structSecs.map(([k,n])=>({
       label:n, data:sl(dcMB(sh,k)), backgroundColor:SEC_COLOR[k], stack:'s',
       borderColor:'#FFFFFF', borderWidth:0.6, drill:i=>`S.month='${MONTHS[i]}';render()`}))},
-    options:{...padT,plugins:{stackTotals:dlMB0},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true}}}});
+    options:{...padT,shareOf:'DC operation cost that month',plugins:{stackTotals:dlMB0},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true}}}});
   mkChart('chFxVr',{type:'doughnut',data:{labels:['Fixed','Variable'],datasets:[{data:[fx,vr],backgroundColor:[C.navy,C.lightsteel],borderWidth:0,dl:{}}]},
-    options:{cutout:'58%',plugins:{legend:{position:'bottom'}}}});
+    options:{cutout:'58%',shareOf:'tagged operating cost',plugins:{legend:{position:'bottom'}}}});
   mkChart('chCombo',{type:'bar',data:{labels:LBL,datasets:[
     {label:'DC cost (MB)',data:sl(whMB),backgroundColor:C.navyA,borderColor:C.slate,borderWidth:1,borderRadius:3,yAxisID:'y'},
     line({label:isDry?'THB/case':'THB/kg',type:'line',data:sl(unitArr(whT,vol)),borderColor:C.teal,yAxisID:'y2',dec:2,dl:{...dl2,mode:'last'}})]},
@@ -1532,7 +1545,7 @@ function pgMM(el){
   /* Dry vs Fresh split for the selected period. */
   mkChart('chMMrank',{type:'bar',data:{labels:['Dry','Fresh'],datasets:[
     {label:'Mid-mile',data:[pSum(dryMM),pSum(freshMM)],backgroundColor:[TEMP_COLOR.Dry,TEMP_COLOR.Fresh],borderRadius:5,dl:dlMB1}]},
-    options:{indexAxis:'y',...padR,plugins:{legend:{display:false}},scales:{x:{...gridY,title:{display:true,text:'MB'}},y:gridX}}});
+    options:{indexAxis:'y',...padR,shareOf:'total mid-mile',plugins:{legend:{display:false}},scales:{x:{...gridY,title:{display:true,text:'MB'}},y:gridX}}});
 }
 
 /* =========================== FULFILLMENT CENTER =========================== */
