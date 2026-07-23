@@ -1636,10 +1636,7 @@ function fcDetail(el, chipsRow, code){
   <div class="grid g2" style="margin-top:14px">
     <div class="card">${chBox('chFCstr',290,'Account cost structure (MB) — from '+code+' ledger sheet')}</div>
     <div class="card">${chBox('chFCcpo',290,'Operation cost, cost/order & AOV trend')}</div>
-  </div>
-  <div class="card" style="margin-top:14px"><h4>Operation contribution — ${modeLbl()}</h4>
-    ${tbl(['','MB'],[['DC income + store revenue',fMB(pSum(f.dcInc)+pSum(f.stRev))],['FC operation cost','−'+fMB(t)],['<b>Contribution (excl. last-mile &amp; sales)</b>','<b>'+fMB(pSum(f.dcInc)+pSum(f.stRev)-t)+'</b>']])}
-    <div class="note">Operation-only view; last-mile is excluded for now, so this is not the full statutory P&L.</div></div>`;
+  </div>`;
   const othersOp=Math.max(pSum(sumFC('op'))-o,0);
   mkChart('chFCmix',{type:'doughnut',data:{labels:[f.name,'Other FCs'],datasets:[{data:[o,othersOp],backgroundColor:[FC_COLOR[code],'#D5DAE5'],borderWidth:0,dl:{}}]},options:{cutout:'58%',plugins:{legend:{position:'bottom'}}}});
   mkChart('chFCfv',{type:'doughnut',data:{labels:['Fixed','Variable'],datasets:[{data:[pSum(f.fixed),pSum(f.vari)],backgroundColor:[C.navy,C.lightsteel],borderWidth:0,dl:{}}]},options:{cutout:'58%',plugins:{legend:{position:'bottom'}}}});
