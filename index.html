@@ -1415,7 +1415,7 @@ function pgUnit(el){
     <div class="card">${chBox('chUDry',260,'Dry unit cost trend (THB/Case)')}</div>
     <div class="card">${chBox('chUFresh',260,'Fresh unit cost trend (THB/Kg)')}</div>
   </div>
-  <div class="section-h"><h5>B2C — What one order costs to fulfill and deliver</h5><div class="ln"></div><span class="mini">${label(S.month)} · cost per order includes fulfillment operation + last-mile delivery · source: ${SRC_NAME[curSrc()]} ${info('Use the “Last-mile source” switch in the top bar to compare the two systems. FC P&L books delivery in the fulfillment ledger (sales from Axtra Omni Channel); the LMD file books the same trips from the delivery operation (sales from RMS). Cost and sales switch together, so the ratio is never mixed.')}</span></div>
+  <div class="section-h"><h5>B2C — What one order costs to fulfill and deliver</h5><div class="ln"></div><span class="mini">${label(S.month)} · cost per order includes fulfillment operation + last-mile delivery · source: ${SRC_NAME[curSrc()]} ${info('Use the “Source of data” switch in the top bar to compare the two systems. FC P&L books delivery in the fulfillment ledger (sales from Axtra Omni Channel); the LMD file books the same trips from the delivery operation (sales from RMS). Cost and sales switch together, so the ratio is never mixed.')}</span></div>
   <div class="grid cards4" style="margin-bottom:14px">
     ${kpi({title:'B2C Cost per Order', val:cpoNet!=null? fmt(cpoNet,0):'–', unit:'THB / order',
       sub:'all fulfillment centers together — total B2C cost ÷ total orders', badge:' '+srcBadge(),
