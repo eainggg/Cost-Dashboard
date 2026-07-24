@@ -60,7 +60,11 @@ select{appearance:none;background:var(--card);border:1px solid var(--line);borde
 .g2{grid-template-columns:1.35fr 1fr}
 .g2e{grid-template-columns:1fr 1fr}
 .g3{grid-template-columns:repeat(3,1fr)}
-@media(max-width:1150px){.cards4,.cards3,.g3{grid-template-columns:repeat(2,1fr)}.g2,.g2e{grid-template-columns:1fr}}
+/* Summary top: hero beside a 2×2 of the four segment cards; the cards fill the hero's height */
+.summ-segs{grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:14px}
+.summ-segs .card{display:flex;flex-direction:column;justify-content:center}
+@media(max-width:1150px){.cards4,.cards3,.g3{grid-template-columns:repeat(2,1fr)}.g2,.g2e{grid-template-columns:1fr}
+  .summ-top{grid-template-columns:1fr!important}.summ-segs{grid-auto-rows:auto}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;min-width:0}
 .card h4{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-3);font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .hero{background:linear-gradient(135deg,#22305A 0%,#161E38 100%);color:#fff;position:relative;overflow:hidden}
@@ -276,7 +280,7 @@ footer{padding:18px 28px;font-size:10.5px;color:var(--on-dark-3);border-top:1px 
 <aside>
   <div class="logo"><div class="mk"><div class="sq"><svg width="19" height="19" viewBox="0 0 24 24" fill="#fff"><path d="M4 20V10h3.5v10H4zm6.25 0V4h3.5v16h-3.5zm6.25 0v-7H20v7h-3.5z"/></svg></div><h1>SCM COST<span>Dashboard</span></h1></div></div>
   <nav id="nav"></nav>
-  <div class="sfoot">Data: Jan-2025 → June 2026<br>B2C data from Jan-2026<br>Generated 2026-07-23 · v12.0 offline · interactive</div>
+  <div class="sfoot">Data: Jan-2025 → June 2026<br>B2C data from Jan-2026<br>Generated 2026-07-24 · v12.0 offline · interactive</div>
 </aside>
 <main>
   <div id="topbar">
@@ -1045,7 +1049,7 @@ const TITLES = {
   mm:['Mid-Mile Transport','DC-to-store transportation across all distribution centers'],
   fc:['Fulfillment Center — B2C','7 fulfillment centers (e-commerce operation)'],
   lm:['Last-Mile Delivery — B2C','Store, FC and Local delivery fleet: cost, labor, fleet and productivity'],
-  guide:['User Guide & Data Sources','How to use the dashboard, how to read a number, and where every figure comes from'],
+  guide:['User Guide','What this dashboard is for and how to use it'],
   raw:['Raw Data Export','Pick a dataset and the columns you need, then download it as CSV'],
 };
 /* deep links used by "What to watch" — open a page with its selector preset */
@@ -1296,27 +1300,29 @@ function pgSummary(el){
     + (lmMissing(i) ? ' <b>No last-mile data for this month</b> — the total below covers B2B + FC operation only.' : '');
   const netBanner = '';
   el.innerHTML = netBanner + `
-  <div class="grid" style="grid-template-columns:1.5fr 1fr 1fr;margin-bottom:14px">
+  <div class="grid summ-top" style="grid-template-columns:1.35fr 1.65fr;margin-bottom:14px;align-items:stretch">
     ${kpi({hero:true,title:'Total SCM Cost — '+modeLbl(), val:fMB(tot), unit:'MB',
       sub:'B2B '+fMB(b2bwh+mm)+' MB (DC '+fMB(b2bwh)+' + Mid-Mile '+fMB(mm)+') · B2C '+fMB(fco+lmSeg)+' MB (FC op '+fMB(fco)+' + Last-Mile '+fMB(lmSeg)+') &nbsp;|&nbsp; '+scopeNote,
       badge:' '+badge(lmMissing(i)?'partial — no last-mile':'B2B + B2C', TOTAL_TXT + (lmMissing(i)?' NOTE: the LMD file has no data for this month, so last-mile is not included in this total.':'')),
       chips:[chip(tot,prevTot,cmpLbl()), `<span class="chip lbl">YoY n/a — B2C scope added 2026</span>`]})}
-    ${segCard('B2B · Distribution Center', SEG.b2bWH, b2bwh)}
-    ${segCard('B2B · Mid-Mile Transport', SEG.midMile, mm)}
+    <div class="grid summ-segs">
+      ${segCard('B2B · Distribution Center', SEG.b2bWH, b2bwh)}
+      ${segCard('B2B · Mid-Mile Transport', SEG.midMile, mm)}
+      ${segCard('B2C · FC Operation', SEG.fcOp, fco, ' '+BADGES.fc409)}
+      ${segCard('B2C · Last-Mile Delivery', lmUse, lmSeg, ' '+badge('FC + Store + Local','The whole delivery operation from LMD Cost Data.xlsb — row “Cost (Store+FC+Local)”. This is what Total SCM counts. The FC P&L “− Last mile” line is a different view of the FC portion only and is deliberately excluded from the total so nothing is counted twice.'))}
+    </div>
   </div>
-  <div class="grid" style="grid-template-columns:1.5fr 1fr 1fr">
+  <div class="grid g2e" style="align-items:start">
     <div class="card" style="border-left:3px solid var(--accent)"><h4>⚑ What to watch — ${modeLbl()} ${info('Every line is generated from the figures of this period. Click a line to open the page that explains it.')}</h4>
       ${watch.map(w=>{ const g=w.go||['guide',null,'Open'];
         const arg = g[1]? ",'"+String(g[1]).replace(/'/g,'')+"'" : '';
         return `<button class="watch" onclick="goTo('${g[0]}'${arg})">
           <span class="wdot ${w.dir}"></span><span class="wtx">${w.html}${w.why?`<span class="wsub">${w.why}</span>`:''}</span><span class="wgo">${g[2]||'Open'} ›</span></button>`;}).join('')}</div>
-    ${segCard('B2C · FC Operation', SEG.fcOp, fco, ' '+BADGES.fc409)}
-    ${segCard('B2C · Last-Mile Delivery', lmUse, lmSeg, ' '+badge('FC + Store + Local','The whole delivery operation from LMD Cost Data.xlsb — row “Cost (Store+FC+Local)”. This is what Total SCM counts. The FC P&L “− Last mile” line is a different view of the FC portion only and is deliberately excluded from the total so nothing is counted twice.'))}
-  </div>
-  <div class="card actioncard" style="margin-top:14px"><h4>⚠ Need to take action — ${modeLbl()} ${info('Only the red-flag items for this period: costs that rose, cost outliers, missing data, and figures to confirm with Finance. Click a row to open the evidence. If the list is empty, no cost increased and no data issue was found.')}</h4>
+    <div class="card actioncard"><h4>⚠ Need to take action — ${modeLbl()} ${info('Only the red-flag items for this period: costs that rose, cost outliers, missing data, and figures to confirm with Finance. Click a row to open the evidence. If the list is empty, no cost increased and no data issue was found.')}</h4>
     ${acts.length? acts.map(a=>{ const arg=a.go[1]? ",'"+String(a.go[1]).replace(/'/g,'')+"'":'';
       return `<button class="watch act ${a.sev}" onclick="goTo('${a.go[0]}'${arg})"><span class="wdot ${a.sev==='high'?'up':'flag'}"></span><span class="wtx">${a.html}${a.why?`<span class="wsub">${a.why}</span>`:''}</span><span class="wgo">${a.go[2]||'Open'} ›</span></button>`;}).join('')
       : `<div class="actionclear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Nothing needs action this period — no segment cost rose and no data issue was detected.</div>`}</div>
+  </div>
   <div class="section-h"><h5>Cost trend — 12 months to ${label(S.month)}</h5><div class="ln"></div><span class="mini">the four segments stacked = Total SCM · labels = monthly total (MB) · dashed = period average · click any month’s segment to open that page set to that month</span></div>
   <div class="card">${chBox('chTrend',310)}</div>
   <div class="grid g2e" style="margin-top:14px">
@@ -1653,9 +1659,10 @@ function fcOverview(el, chipsRow){
       ['<b>B2C Total</b>',fMB(pSum(sales)),aovAll?fmt(aovAll,0):'–',fMB(pSum(op)),pSum(sales)?(pSum(op)/pSum(sales)*100).toFixed(1)+'%':'–','',''])}
     <div class="note">Source: FC P&L sheet (KTHB → MB). Cost = FC operation only; its delivery sits in the Last-Mile total. FC409 from its account sheet. Cost/Order shown for the selected month.</div>
   </div>`;
+  /* both series in the FC master colour (purple), told apart by tone: sales = pale, operation = full */
   mkChart('chFCsc',{type:'bar',data:{labels:FC_ORDER.map(c=>FC_SHORT[c]),datasets:[
-    {label:'Sales',data:FC_ORDER.map(c=>pSum(FC[c].sales)),backgroundColor:C.teal,borderRadius:4,dl:dlMB1,drill:i=>`S.fc='${FC_ORDER[i]}';render()`},
-    {label:'FC operation',data:FC_ORDER.map(c=>pSum(FC[c].op)),backgroundColor:C.navy,borderRadius:4,dl:dlMB1,drill:i=>`S.fc='${FC_ORDER[i]}';render()`}]},
+    {label:'Sales',data:FC_ORDER.map(c=>pSum(FC[c].sales)),backgroundColor:lighten(SEGCOL.fcop,0.55),borderRadius:4,dl:dlMB1,drill:i=>`S.fc='${FC_ORDER[i]}';render()`},
+    {label:'FC operation',data:FC_ORDER.map(c=>pSum(FC[c].op)),backgroundColor:SEGCOL.fcop,borderRadius:4,dl:dlMB1,drill:i=>`S.fc='${FC_ORDER[i]}';render()`}]},
     options:{...padT,scales:{x:gridX,y:{...gridY,title:{display:true,text:'MB'}}}}});
   mkChart('chFCtrend',{type:'bar',data:{labels:fLBL(),datasets:FC_ORDER.map((c,k)=>({label:FC_SHORT[c],data:fsl(FC[c].op),backgroundColor:FC_COLOR[c],stack:'s',drill:`S.fc='${c}';render()`}))},
     options:{...padT,plugins:{stackTotals:dlMB0},scales:{x:{...gridX,stacked:true},y:{...gridY,stacked:true,title:{display:true,text:'MB'}}}}});
@@ -2060,49 +2067,21 @@ function filterKPI(q){
 
 /* =========================== USER GUIDE & SOURCES =========================== */
 function pgGuide(el){
-  const KPIDEF=[
-    ['Total SCM Cost','All supply-chain cost for the period','B2B (DC Operation incl. TFRS16 + Mid-Mile) + B2C (FC Operation + Last-Mile FC/Store/Local)','MB','down'],
-    ['DC Operation Cost','Cost of running the 10 distribution centers','“Total Warehouse cost” + “Warehouse (TFRS16)” per DC sheet','MB','down'],
-    ['Mid-Mile Cost','Transport from DC to stores','“Transportation Cost” row per DC sheet','MB','down'],
-    ['FC Operation Cost','Cost of running the 7 fulfillment centers (e-commerce)','P&L “- Operation Cost” = Total Cost − Last-mile','MB','down'],
-    ['Last-Mile Cost','Delivery to the customer — FC, Store and Local','LMD file “Cost (Store+FC+Local)”; the FC P&L last-mile line is excluded so FC delivery is counted once','MB','down'],
-    ['Cost Mix %','Segment share of total','segment ÷ Total SCM','%','—'],
-    ['MoM %','Change vs previous month','current ÷ previous − 1','%','down'],
-    ['YoY %','Change vs same month last year','current ÷ same month LY − 1','%','down'],
-    ['YTD','Year-to-date accumulation','Σ Jan → selected month; YTD unit cost = YTD cost ÷ YTD volume','MB','—'],
-    ['Average benchmark','Reference used to spot outliers','peer average = mean across the items shown; period average = mean across the shown months (dashed line on charts)','—','—'],
-    ['Dry unit cost (THB/Case)','Cost to handle one case in a Dry DC','DC operation cost ÷ Inbound cases (excl. TFRS16 & mid-mile, file convention)','THB/Case','down'],
-    ['Fresh unit cost (THB/Kg)','Cost to handle one kg in a Fresh DC','DC operation cost ÷ (Tons × 1,000)','THB/Kg','down'],
-    ['B2B all-in unit cost','Unit cost including mid-mile & TFRS16','Grand Total ÷ Inbound cases (Dry) or kg (Fresh)','THB','down'],
-    ['Cost / Trip','Mid-mile cost per truck trip (Dry)','Transportation Cost ÷ Dry MM Trips','THB/Trip','down'],
-    ['Case / Trip','Truck utilization','Outbound cases ÷ trips','case/trip','up'],
-    ['Orders','Completed e-commerce orders','avg orders/day × days (= Sales ÷ AOV)','orders','up'],
-    ['Cost / Order','B2C operation cost per order','FC operation ÷ orders (last-mile excluded)','THB/Order','down'],
-    ['Cost-to-Sale %','Cost efficiency vs revenue','FC operation ÷ Sales','%','down'],
-    ['Fixed / Variable','Cost behavior split','Σ ledger rows tagged Fix(ed) / Variable in col C','MB','—'],
-    ['TFRS16','Lease accounting standard add-on (right-of-use)','“Warehouse (TFRS16)” row; included in DC Operation & B2B totals','MB','—'],
-    ['AOV','Average order value','Sales ÷ orders','THB','up'],
-    ['% share (hover)','Each bar’s share of its stack or total','hover any bar to see its value plus % share','%','—'],
-    ['Drill-down','Open the detail behind a chart','click a bar/segment on a chart tagged “click to drill in”','—','—'],
-    ['Legend filter','Include / exclude a data series','click a legend key to hide or restore that series','—','—'],
-  ].map(r=>[`<span class="name">${r[0]}</span>`,r[1],r[2],r[3],r[4]==='down'?'▼ lower is better':(r[4]==='up'?'▲ higher is better':'—')]);
-
   el.innerHTML = `
   <div class="gtop">
     <div class="gtop-l">
-      <div class="gtop-k">In one line</div>
-      <div class="gtop-t">What did the supply chain cost, and what changed?</div>
-      <div class="gtop-f"><b>Total SCM</b> = <b>B2B</b> (Distribution Center incl. TFRS16 + Mid-Mile) + <b>B2C</b> (FC Operation + Last-Mile: FC, Store &amp; Local)</div>
+      <div class="gtop-k">Purpose</div>
+      <div class="gtop-t">One monthly view of what the supply chain cost — and what changed.</div>
+      <div class="gtop-f">Built for C-level review, this dashboard brings the whole supply-chain cost into a single place: <b>B2B</b> — Distribution Center operation and Mid-Mile transport — and <b>B2C</b> — Fulfillment Center operation and Last-Mile delivery. It exists to answer, at a glance, <b>where the money went this month, what moved, and what needs attention</b> — without opening a spreadsheet.</div>
     </div>
-    <div class="gtop-r"><div class="gtop-n">${fMB(SEG.total[mi(S.month)])}</div><div class="gtop-u">MB · ${label(S.month)}</div></div>
   </div>
 
-  <div class="section-h"><h5>How to use this dashboard</h5><div class="ln"></div><span class="mini">three steps</span></div>
+  <div class="section-h"><h5>How to use it</h5><div class="ln"></div><span class="mini">three steps</span></div>
   <div class="grid g3">
     <div class="card step"><div class="step-n">1</div>
       <div class="step-h">Set the period</div>
-      <div class="step-b">Pick the <b>Month</b> and choose <b>Monthly</b> or <b>YTD</b> at the top right. Every card, chart and table on the page follows that choice.</div>
-      <div class="step-t">${ICO.cal} Month &amp; mode drive everything</div>
+      <div class="step-b">Pick the <b>Year</b> and <b>Month</b>, and choose <b>Monthly</b> or <b>YTD</b> at the top right. Every card, chart and table follows that choice.</div>
+      <div class="step-t">${ICO.cal} Period drives everything</div>
     </div>
     <div class="card step"><div class="step-n">2</div>
       <div class="step-h">Pick your question</div>
@@ -2118,8 +2097,8 @@ function pgGuide(el){
       <div class="step-h">Go deeper</div>
       <div class="step-b">
         <b>Click</b> a bar on any chart tagged “click to drill in” — it opens that DC, FC or segment.<br>
-        <b>Click a <span class="chip dn">▼ MoM</span> or <span class="chip up">▲ YoY</span> chip</b> to jump the whole page to that comparison period — MoM opens last month, YoY opens the same month last year.<br>
-        <b>Hover</b> a bar for its exact value and share; hover a <span class="badge">badge</span> for the note behind it.<br>
+        <b>Click a <span class="chip dn">▼ MoM</span> or <span class="chip up">▲ YoY</span> chip</b> to jump the whole page to that comparison period.<br>
+        <b>Hover</b> a bar for its exact value; hover a <span class="badge">badge</span> for the note behind it.<br>
         <b>Click</b> any line in <b>What to watch</b> to jump to the evidence.</div>
       <div class="step-t">${ICO.click} Most things on screen are clickable</div>
     </div>
@@ -2133,42 +2112,6 @@ function pgGuide(el){
       <div class="rn"><span class="chip na">n/a</span><span>Nothing to compare against yet.</span></div>
     </div>
     <div class="mini" style="margin-top:10px">On <b>volume and utilisation</b> the logic flips — more cases per trip is good, so up is green. In every chart: <b>pale bar</b> = the period before · <b>solid bar</b> = now · <b>dashed line</b> = the average.</div>
-  </div>
-
-  <div class="card srccard" style="margin-top:14px">
-    <div class="guide-h">Where the numbers come from</div>
-    <div class="srcrow" style="grid-template-columns:repeat(4,1fr)">
-      <div class="src"><div class="src-f">DC Cost Data</div><div class="src-d">Distribution Center operation</div></div>
-      <div class="src"><div class="src-f">MM Cost Data</div><div class="src-d">Mid-Mile transport (Dry · Fresh)</div></div>
-      <div class="src"><div class="src-f">FC Cost Data</div><div class="src-d">Fulfillment Center · sales from <b>AO</b></div></div>
-      <div class="src"><div class="src-f">LM Cost Data</div><div class="src-d">Last-Mile · sales from <b>RMS</b></div></div>
-    </div>
-    <div class="mini" style="margin-top:10px">Distribution-center operation and Mid-Mile transport are now separate workbooks; mid-mile is reported at the Dry / Fresh level (the source has no per-DC split). AO (Axtra Omni Channel) and RMS are different systems, so the same fulfilment deliveries do not tie exactly between them. Ratios are never mixed across the two — each page states its source, and Unit Cost Analysis lets you switch.<br>
-    <b>Cell-by-cell working, the source cross-check, the TFRS16 proof and the automated identity checks all live in <span class="fileref">KPI Calculation.xlsx</span></b> — sheets 9–12. KPI definitions are in <span class="fileref">KPI List_Enhanced.xlsx</span>.</div>
-  </div>
-
-  <div class="section-h"><h5>KPI &amp; indicator dictionary</h5><div class="ln"></div><span class="mini">type to filter · <span id="kpiCount"></span></span></div>
-  <div class="card">
-    <input class="kpisearch" type="text" placeholder="Search KPIs — e.g. AOV, cost/order, TFRS16, average…" oninput="filterKPI(this.value)">
-    <div id="kpiTable" class="kpibox">${tbl(['KPI / Indicator','Meaning','How it is calculated','Unit','Good direction'],KPIDEF,null,true)}</div>
-    <div class="note">Scroll inside the box · ${KPIDEF.length} entries.</div>
-  </div>
-
-  <div class="card" style="margin-top:14px;border-left:4px solid var(--accent)"><div class="guide-h">Sales sources — read before comparing any ratio</div>
-    <div class="mini">
-    <b>Fulfillment Center pages — sales, orders and AOV come from Axtra Omni Channel (AO).</b> Every FC ratio (cost-to-sale, cost per order, AOV) divides by AO sales.<br>
-    <b>Last-Mile pages — sales come from RMS.</b> Every last-mile ratio divides by RMS sales.<br>
-    The two systems report the same fulfillment business differently, so the FC sales figure on the Fulfillment Center page and the one on the Last-Mile page will not match, and are not expected to. Compare ratios inside one source only.<br>
-    Cost figures are unaffected. Cards that depend on a sales source carry a <span class="badge">sales: AO</span> or <span class="badge">sales: RMS</span> signal — hover it for this note.</div>
-  </div>
-
-  <div class="card" style="margin-top:14px"><div class="guide-h">Known data caveats (also badged in place)</div>
-    <div class="mini">1. <b>FC406 Hat Yai</b>: P&L cost rows identical to FC405 for all 2026 months — pending Finance check.<br>
-    2. <b>FC409 Rangsit</b>: no P&L block yet — cost taken from its ledger sheet (no sales/orders).<br>
-    3. <b>FC403</b>: P&L vs ledger gap −0.76 MB (Jun-26); P&L used as source of truth.<br>
-    4. <b>MKD1 / MKD2</b>: negative months possible (credit/allocation entries in source).<br>
-    5. <b>Fresh units</b>: stored per Kg — multiply by 1,000 for THB/Ton.<br>
-    6. <b>Last-Mile</b>: 2026 only — the LMD file starts in January 2026, so last-mile has no year-on-year comparison until 2027.</div>
   </div>`;
 }
 
