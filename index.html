@@ -1117,7 +1117,7 @@ function drawControls(){
     const show = LM.ok && SRC_PAGES.indexOf(S.page)>=0;   /* Unit Cost Analysis only */
     sr.style.display = show ? '' : 'none';
     if(show) {
-      sr.innerHTML = `<label>Last-mile source ${info('The same fulfillment deliveries are recorded in two systems. Switching moves BOTH the cost and the sales together, so cost-to-sales is never mixed across sources. '+SRC_TIP.PNL+'  //  '+SRC_TIP.LMD)}</label>
+      sr.innerHTML = `<label>Source of data ${info('The same fulfillment deliveries are recorded in two systems. Switching moves BOTH the cost and the sales together, so cost-to-sales is never mixed across sources. '+SRC_TIP.PNL+'  //  '+SRC_TIP.LMD)}</label>
         <div class="seg" id="segSrc">
           <button data-r="PNL" class="${S.src==='PNL'?'on':''}" data-tip="${esc0(SRC_TIP.PNL)}">AO (FC)</button>
           <button data-r="LMD" class="${S.src==='LMD'?'on':''}" data-tip="${esc0(SRC_TIP.LMD)}">RMS (LMD)</button>
@@ -1929,11 +1929,6 @@ function lmLocal(el, head){
   const l=LM.local;
   const cost=lmSum(l.cost), pc=lmPrev(l.cost);
   el.innerHTML = head + `
-  <div class="card" style="border-left:4px solid var(--gold);margin-bottom:14px">
-    <h4>Local channel — under construction ${badge('in progress','The KPI list marks every Local indicator as "Under Construction". Delivery cost is already reported in the workbook and is shown below; fleet, labor and productivity for Local will be added once the business completes the data collection.')}</h4>
-    <div class="mini">Cost is available and included in every last-mile total on this dashboard. The remaining Local indicators
-    (active trucks, helpers, daily truck, driver and helper cost, cost-to-sales) are still being set up by the business.</div>
-  </div>
   <div class="grid cards4">
     ${kpi({title:'Local Delivery Cost', val:fMB(cost), unit:'MB', sub:lmLbl(),
       chips:[chip(cost,pc,cmpLbl()), chip(cost,lmYoY(l.cost),'YoY')]})}
